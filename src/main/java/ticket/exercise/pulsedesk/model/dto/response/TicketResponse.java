@@ -1,4 +1,4 @@
-package ticket.exercise.pulsedesk.model.dto.reponse;
+package ticket.exercise.pulsedesk.model.dto.response;
 
 import ticket.exercise.pulsedesk.model.enums.Category;
 import ticket.exercise.pulsedesk.model.enums.Priority;

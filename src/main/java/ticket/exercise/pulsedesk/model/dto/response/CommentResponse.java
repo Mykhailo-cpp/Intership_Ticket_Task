@@ -1,4 +1,4 @@
-package ticket.exercise.pulsedesk.model.dto.reponse;
+package ticket.exercise.pulsedesk.model.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
