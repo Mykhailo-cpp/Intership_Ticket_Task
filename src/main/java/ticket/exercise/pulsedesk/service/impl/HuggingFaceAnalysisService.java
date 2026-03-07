@@ -19,6 +19,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -30,6 +32,9 @@ public class HuggingFaceAnalysisService implements AiAnalysisService {
 
     @Value("${huggingface.api.url}")
     private String apiUrl;
+
+    @Value("${huggingface.api.model}")
+    private String apiModel;
 
     @Value("${huggingface.api.token}")
     private String apiToken;
@@ -73,9 +78,14 @@ public class HuggingFaceAnalysisService implements AiAnalysisService {
     }
 
     private String callHuggingFaceApi(String prompt) throws Exception {
-        String requestBody = objectMapper.writeValueAsString(
-                new HuggingFaceRequest(prompt)
-        );
+        String requestBody = objectMapper.writeValueAsString(Map.of(
+                "model", apiModel,
+                "messages", List.of(Map.of(
+                        "role", "user",
+                        "content", prompt
+                )),
+                "max_tokens", 300
+        ));
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
@@ -97,26 +107,39 @@ public class HuggingFaceAnalysisService implements AiAnalysisService {
 
     private String extractTextFromResponse(String responseBody) throws Exception {
         JsonNode root = objectMapper.readTree(responseBody);
-        if (root.isArray() && root.size() > 0) {
-            JsonNode first = root.get(0);
-            if (first.has("generated_text")) {
-                return first.get("generated_text").asText().trim();
+        if (root.has("choices")) {
+            JsonNode content = root
+                    .path("choices")
+                    .get(0)
+                    .path("message")
+                    .path("content");
+            if (!content.isMissingNode()) {
+                return content.asText().trim();
             }
-        }
-        if (root.has("generated_text")) {
-            return root.get("generated_text").asText().trim();
         }
         throw new AiAnalysisException("Unexpected response format from HuggingFace API: " + responseBody);
     }
 
     private String buildTriagePrompt(String comment) {
         return String.format(
-                "Classify this user comment as either a support issue or general feedback.\n" +
+                "You are a support ticket classifier. Analyze this user comment carefully.\n" +
+                        "Comment: \"%s\"\n\n" +
+                        "Answer YES if the comment is ANY of these:\n" +
+                        "- A bug report or error\n" +
+                        "- A billing or payment issue\n" +
+                        "- An account access problem\n" +
+                        "- A feature request or suggestion for improvement\n" +
+                        "- Any request that requires action from a support team\n\n" +
+                        "Answer NO only if it is purely a compliment, general praise, or contains absolutely no actionable request.\n\n" +
+                        "Examples:\n" +
+                        "Comment: 'I love the app!' → NO\n" +
+                        "Comment: 'It would be great to export to CSV' → YES\n" +
+                        "Comment: 'The login button is broken' → YES\n" +
+                        "Comment: 'Can you add dark mode?' → YES\n" +
+                        "Comment: 'Great job on the new update!' → NO\n\n" +
                         "Comment: \"%s\"\n" +
-                        "Answer with only YES if this is a bug, error, billing issue, account problem, or feature request that needs support. " +
-                        "Answer with only NO if it is a compliment, general praise, or non-actionable feedback.\n" +
-                        "Answer:",
-                comment
+                        "Answer (YES or NO):",
+                comment, comment
         );
     }
 
@@ -197,6 +220,4 @@ public class HuggingFaceAnalysisService implements AiAnalysisService {
         String trimmed = comment.trim();
         return trimmed.length() > 60 ? trimmed.substring(0, 57) + "..." : trimmed;
     }
-
-    record HuggingFaceRequest(String inputs) {}
 }
