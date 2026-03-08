@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PulseDesk</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            background: #f5f5f5;
+            color: #333;
+            padding: 30px 20px;
+        }
+
+        h1 {
+            font-size: 22px;
+            margin-bottom: 24px;
+            color: #111;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 24px;
+            max-width: 1000px;
+        }
+
+        @media (max-width: 700px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+
+        .box {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+        }
+
+        .box h2 {
+            font-size: 15px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            color: #222;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        textarea, select {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: Arial, sans-serif;
+            color: #333;
+            margin-bottom: 14px;
+            outline: none;
+        }
+
+        textarea { min-height: 110px; resize: vertical; }
+        textarea:focus, select:focus { border-color: #4a90e2; }
+
+        button.submit {
+            width: 100%;
+            padding: 10px;
+            background: #4a90e2;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        button.submit:hover { background: #357abd; }
+        button.submit:disabled { background: #a0c4f0; cursor: not-allowed; }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 16px;
+        }
+
+        .tab {
+            padding: 8px 18px;
+            font-size: 13px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: #888;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab.active { color: #4a90e2; border-bottom-color: #4a90e2; font-weight: bold; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .item {
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+
+        .item-title {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: #222;
+        }
+
+        .item-text {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .item-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .badge-BUG     { background: #fde8e8; color: #c0392b; }
+        .badge-FEATURE { background: #e8f0fd; color: #2c5fc0; }
+        .badge-BILLING { background: #fef9e7; color: #c08000; }
+        .badge-ACCOUNT { background: #e8fdf0; color: #1a8c4e; }
+        .badge-OTHER   { background: #f0f0f0; color: #666; }
+        .badge-HIGH    { background: #fde8e8; color: #c0392b; }
+        .badge-MEDIUM  { background: #fef9e7; color: #c08000; }
+        .badge-LOW     { background: #e8fdf0; color: #1a8c4e; }
+
+        .meta-date { font-size: 11px; color: #aaa; margin-left: auto; }
+
+        .empty { text-align: center; padding: 30px; color: #aaa; font-size: 13px; }
+
+        .msg {
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-bottom: 14px;
+            display: none;
+        }
+        .msg.success { background: #e8fdf0; color: #1a8c4e; border: 1px solid #b2dfcc; display: block; }
+        .msg.error   { background: #fde8e8; color: #c0392b; border: 1px solid #f5c0c0; display: block; }
+
+        .right-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .right-header h2 { border: none; padding: 0; margin: 0; }
+
+        .refresh {
+            font-size: 12px;
+            color: #4a90e2;
+            background: none;
+            border: 1px solid #4a90e2;
+            border-radius: 4px;
+            padding: 4px 10px;
+            cursor: pointer;
+        }
+
+        .refresh:hover { background: #f0f7ff; }
+
+        .comment-status { font-size: 11px; margin-top: 6px; color: #888; }
+        .comment-status.converted { color: #1a8c4e; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h1>PulseDesk — Comment Triage</h1>
+
+<div class="layout">
+
+    <!-- Left: Submit -->
+    <div class="box">
+        <h2>Submit a Comment</h2>
+        <div id="msg" class="msg"></div>
+        <label>Comment</label>
+        <textarea id="content" placeholder="Describe your issue or feedback..."></textarea>
+        <label>Source</label>
+        <select id="source">
+            <option value="web-form">Web Form</option>
+            <option value="app-review">App Review</option>
+            <option value="chat-widget">Chat Widget</option>
+            <option value="email">Email</option>
+            <option value="other">Other</option>
+        </select>
+        <button class="submit" id="submitBtn" onclick="submitComment()">Submit</button>
+    </div>
+
+    <!-- Right: Results -->
+    <div class="box">
+        <div class="right-header">
+            <h2>Results</h2>
+            <button class="refresh" onclick="refreshCurrent()">↻ Refresh</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('tickets', this)">
+                Tickets (<span id="ticketCount">0</span>)
+            </button>
+            <button class="tab" onclick="switchTab('comments', this)">
+                Comments (<span id="commentCount">0</span>)
+            </button>
+        </div>
+
+        <div id="tab-tickets" class="tab-content active">
+            <div id="ticketsList"><div class="empty">No tickets yet.</div></div>
+        </div>
+
+        <div id="tab-comments" class="tab-content">
+            <div id="commentsList"><div class="empty">No comments yet.</div></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let currentTab = 'tickets';
+
+    function switchTab(name, el) {
+        currentTab = name;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('tab-' + name).classList.add('active');
+        name === 'tickets' ? loadTickets() : loadComments();
+    }
+
+    function refreshCurrent() {
+        currentTab === 'tickets' ? loadTickets() : loadComments();
+    }
+
+    function showMsg(text, type) {
+        const el = document.getElementById('msg');
+        el.textContent = text;
+        el.className = 'msg ' + type;
+        setTimeout(() => el.className = 'msg', 4000);
+    }
+
+    async function submitComment() {
+        const content = document.getElementById('content').value.trim();
+        const source  = document.getElementById('source').value;
+        if (!content) { showMsg('Please enter a comment.', 'error'); return; }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Analyzing...';
+
+        try {
+            const res  = await fetch('/comments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content, source })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                showMsg(
+                    data.data.convertedToTicket
+                        ? 'Ticket #' + data.data.ticketId + ' created.'
+                        : 'Comment submitted — no ticket needed.',
+                    'success'
+                );
+                document.getElementById('content').value = '';
+                loadTickets();
+                loadComments();
+            } else {
+                showMsg(data.message || 'Something went wrong.', 'error');
+            }
+        } catch (e) {
+            showMsg('Could not reach the server.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Submit';
+        }
+    }
+
+    async function loadTickets() {
+        const list = document.getElementById('ticketsList');
+        list.innerHTML = '<div class="empty">Loading...</div>';
+        try {
+            const data    = await fetch('/tickets').then(r => r.json());
+            const tickets = data.data || [];
+            document.getElementById('ticketCount').textContent = tickets.length;
+
+            list.innerHTML = tickets.length === 0
+                ? '<div class="empty">No tickets yet. Submit a comment to get started.</div>'
+                : tickets.map(t => `
+                    <div class="item">
+                        <div class="item-title">${esc(t.title)}</div>
+                        <div class="item-text">${esc(t.summary)}</div>
+                        <div class="item-meta">
+                            <span class="badge badge-${t.category}">${t.category}</span>
+                            <span class="badge badge-${t.priority}">${t.priority}</span>
+                            <span class="meta-date">${fmt(t.createdAt)}</span>
+                        </div>
+                    </div>`).join('');
+        } catch (e) {
+            list.innerHTML = '<div class="empty">Failed to load tickets.</div>';
+        }
+    }
+
+    async function loadComments() {
+        const list = document.getElementById('commentsList');
+        list.innerHTML = '<div class="empty">Loading...</div>';
+        try {
+            const data     = await fetch('/comments').then(r => r.json());
+            const comments = data.data || [];
+            document.getElementById('commentCount').textContent = comments.length;
+
+            list.innerHTML = comments.length === 0
+                ? '<div class="empty">No comments yet.</div>'
+                : comments.map(c => `
+                    <div class="item">
+                        <div class="item-text">${esc(c.content)}</div>
+                        <div class="item-meta">
+                            <span>${esc(c.source)}</span>
+                            <span class="meta-date">${fmt(c.createdAt)}</span>
+                        </div>
+                        <div class="comment-status ${c.convertedToTicket ? 'converted' : ''}">
+                            ${c.convertedToTicket
+                    ? '✓ Converted to Ticket #' + c.ticketId
+                    : c.analyzed ? '— No ticket needed' : '⏳ Pending'}
+                        </div>
+                    </div>`).join('');
+        } catch (e) {
+            list.innerHTML = '<div class="empty">Failed to load comments.</div>';
+        }
+    }
+
+    function esc(s) {
+        return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function fmt(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        return d.toLocaleDateString('en-GB') + ' ' +
+            d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    }
+
+    loadTickets();
+</script>
+</body>
+</html>
