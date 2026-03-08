@@ -26,6 +26,7 @@ A Spring Boot backend application that collects user comments from different cha
 - **HuggingFace Inference API** (Qwen/Qwen2.5-72B-Instruct)
 - **Lombok**
 - **JUnit 5 + Mockito** (unit tests)
+- **Docker + Docker Compose**
 
 ---
 
@@ -58,6 +59,12 @@ src/main/resources/
 └── static/
     └── index.html                   # Simple web UI
 
+# Root level
+├── Dockerfile                       # Multi-stage Docker build
+├── docker-compose.yml               # Container orchestration
+├── .dockerignore                    # Excludes unnecessary files from build
+└── .env.example                     # Environment variable template
+
 src/test/java/ticket/exercise/pulsedesk/
 ├── CommentServiceTest.java
 ├── TicketServiceTest.java
@@ -70,9 +77,14 @@ src/test/java/ticket/exercise/pulsedesk/
 
 ## Prerequisites
 
+**Option A — Run with Docker (recommended):**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) installed
+
+**Option B — Run locally:**
 - Java 17+
 - Maven 3.8+
-- A free [HuggingFace](https://huggingface.co) account and API token
+
+Both options require a free [HuggingFace](https://huggingface.co) account and API token.
 
 ---
 
@@ -84,9 +96,49 @@ git clone https://github.com/YOUR_USERNAME/pulsedesk.git
 cd pulsedesk
 ```
 
+## Setup & Running
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/YOUR_USERNAME/pulsedesk.git
+cd pulsedesk
+```
+
 ### 2. Configure your HuggingFace token
 
-Copy the example config file:
+Get your token at: https://huggingface.co/settings/tokens (Read access is enough)
+
+---
+
+### Option A — Run with Docker (recommended)
+
+Copy the environment variable template:
+```bash
+cp .env.example .env
+```
+
+Open `.env` and replace the token:
+```
+HUGGINGFACE_API_TOKEN=YOUR_TOKEN_HERE
+```
+
+Build and start the container:
+```bash
+docker-compose up --build
+```
+
+The server starts at **http://localhost:8080**
+
+To stop:
+```bash
+docker-compose down
+```
+
+---
+
+### Option B — Run locally
+
+Copy the config template:
 ```bash
 cp src/main/resources/application.properties.example src/main/resources/application.properties
 ```
@@ -96,9 +148,7 @@ Open `application.properties` and replace the token:
 huggingface.api.token=YOUR_TOKEN_HERE
 ```
 
-Get your token at: https://huggingface.co/settings/tokens (Read access is enough)
-
-### 3. Build and run
+Build and run:
 ```bash
 mvn clean install
 mvn spring-boot:run
@@ -106,7 +156,9 @@ mvn spring-boot:run
 
 The server starts at **http://localhost:8080**
 
-### 4. Open the UI
+---
+
+### 3. Open the UI
 
 Go to **http://localhost:8080** in your browser to use the web interface.
 
@@ -259,6 +311,7 @@ All errors return a consistent JSON envelope:
 
 ## Notes
 
-- `application.properties` is excluded from version control via `.gitignore` to protect the API token. Use `application.properties.example` as a setup template.
-- The AI model used is `Qwen/Qwen2.5-72B-Instruct` via the HuggingFace router. This can be changed in `application.properties` by updating `huggingface.api.model`.
+- `application.properties` and `.env` are excluded from version control via `.gitignore` to protect the API token. Use `application.properties.example` and `.env.example` as setup templates.
+- The AI model used is `Qwen/Qwen2.5-72B-Instruct` via the HuggingFace router. This can be changed by updating `HUGGINGFACE_API_MODEL` in `.env` (Docker) or `application.properties` (local).
 - The `AiAnalysisService` is an interface — swapping the AI provider requires no changes to business logic.
+- The Docker image uses a multi-stage build: stage 1 compiles with Maven, stage 2 runs with a lightweight JRE only. No source code or Maven is included in the final image.
