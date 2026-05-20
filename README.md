@@ -96,14 +96,6 @@ git clone https://github.com/YOUR_USERNAME/pulsedesk.git
 cd pulsedesk
 ```
 
-## Setup & Running
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/YOUR_USERNAME/pulsedesk.git
-cd pulsedesk
-```
-
 ### 2. Configure your HuggingFace token
 
 Get your token at: https://huggingface.co/settings/tokens (Read access is enough)
